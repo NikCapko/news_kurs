@@ -106,12 +106,14 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
             public void onResponse(Call<NewsModel> call, Response<NewsModel> response) {
                 hideProgress();
                 NewsModel newsModel = response.body();
-                newsList.addAll(newsModel.getData());
-                rlNews.setLayoutManager(layoutManager);
-                rlNews.setItemAnimator(new DefaultItemAnimator());
-                adapter = new Adapter(newsModel.getData(), MainActivity.this);
-                adapter.setOnItemClickListener(MainActivity.this);
-                rlNews.setAdapter(adapter);
+                if (newsModel != null) {
+                    newsList.addAll(newsModel.getData());
+                    rlNews.setLayoutManager(layoutManager);
+                    rlNews.setItemAnimator(new DefaultItemAnimator());
+                    adapter = new Adapter(newsModel.getData(), MainActivity.this);
+                    adapter.setOnItemClickListener(MainActivity.this);
+                    rlNews.setAdapter(adapter);
+                }
             }
 
             @Override
