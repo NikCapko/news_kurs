@@ -10,6 +10,6 @@ public interface NewsApi {
     @GET("get-news/{count}")
     Call<NewsModel> getNews(@Path("count") String count);
 
-    @GET("news-view/{id1}")
+    @GET("add-view/{id1}")
     Call<Void> newsView(@Path("id1") String newsId);
 }

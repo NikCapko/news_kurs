@@ -28,7 +28,7 @@ public class BrowserActivity extends AppCompatActivity {
 
         Bundle arguments = getIntent().getExtras();
         if (arguments != null) {
-            String url = arguments.get(MainActivity.URL).toString();
+            String url = arguments.get(MainActivity.LINK).toString();
             wvBrowser.loadUrl(url);
         }
     }

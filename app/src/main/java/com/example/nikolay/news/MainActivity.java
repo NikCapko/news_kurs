@@ -1,6 +1,7 @@
 package com.example.nikolay.news;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -14,7 +15,6 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.example.nikolay.news.request.BrowserActivity;
 import com.example.nikolay.news.request.News;
 import com.example.nikolay.news.request.NewsApi;
 import com.example.nikolay.news.request.NewsModel;
@@ -33,7 +33,7 @@ import retrofit2.Retrofit;
 public class MainActivity extends AppCompatActivity implements Adapter.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
 
     public static final String TAG = "MainActivity.TAG";
-    public static final String URL = "MainActivity.URL";
+    public static final String LINK = "MainActivity.LINK";
 
     @BindView(R.id.rl_news)
     RecyclerView rlNews;
@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
         newsApi = retrofit.create(NewsApi.class);
         layoutManager = new LinearLayoutManager(MainActivity.this);
         newsList = new ArrayList<>();
-        rlNews.setOnScrollListener(new RecyclerView.OnScrollListener() {
+        /*rlNews.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
                     }
                 }
             }
-        });
+        });*/
         pageIndex = 0;
         getNews();
     }
@@ -93,9 +93,11 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
             rlNews.setVisibility(View.GONE);
             progress.setVisibility(ProgressBar.VISIBLE);
             newsList = new ArrayList<>();
+            progress.setVisibility(ProgressBar.VISIBLE);
+            progress.setVisibility(View.VISIBLE);
             layoutManager = new LinearLayoutManager(MainActivity.this);
             getNews();
-        }, 4000);
+        }, 0);
         swipe.setRefreshing(false);
     }
 
@@ -110,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
                     newsList.addAll(newsModel.getData());
                     rlNews.setLayoutManager(layoutManager);
                     rlNews.setItemAnimator(new DefaultItemAnimator());
-                    adapter = new Adapter(newsModel.getData(), MainActivity.this);
+                    adapter = new Adapter(newsList, MainActivity.this);
                     adapter.setOnItemClickListener(MainActivity.this);
                     rlNews.setAdapter(adapter);
                 }
@@ -135,22 +137,35 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
 
     @Override
     public void onItemClick(int id) {
-        newsApi.newsView(String.valueOf(id));
-        Intent intent = new Intent(this, BrowserActivity.class);
-        intent.putExtra(URL, newsList.get(id).getLink());
-        startActivity(intent);
+        Call<Void> call = newsApi.newsView(String.valueOf(newsList.get(id).getId()));
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(newsList.get(id).getLink()));
+                //intent.putExtra(LINK, newsList.get(id).getLink());
+                startActivity(intent);
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+
+            }
+        });
     }
 
     public void loadMoreNews() {
         isLoading = false;
-        Call<NewsModel> call = newsApi.getNews(String.valueOf(pageIndex++));
+        pageIndex += 1;
+        Call<NewsModel> call = newsApi.getNews(String.valueOf(pageIndex));
         call.enqueue(new Callback<NewsModel>() {
             @Override
             public void onResponse(Call<NewsModel> call, Response<NewsModel> response) {
                 NewsModel newsModel = response.body();
-                newsList.addAll(newsModel.getData());
-                adapter.notifyDataSetChanged();
-                rlNews.setAdapter(adapter);
+                if (newsModel != null) {
+                    newsList.addAll(newsModel.getData());
+                    adapter.notifyDataSetChanged();
+                    rlNews.setAdapter(adapter);
+                }
             }
 
             @Override

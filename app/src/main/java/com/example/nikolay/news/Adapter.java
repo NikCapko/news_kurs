@@ -12,10 +12,10 @@ import com.example.nikolay.news.request.News;
 
 import java.util.List;
 
-public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class Adapter extends RecyclerView.Adapter<Adapter.ItemHolder> {
 
-    List<News> newsList;
-    Context context;
+    private List<News> newsList;
+    private Context context;
 
     private OnItemClickListener mOnItemClickListener;
 
@@ -28,14 +28,14 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.mOnItemClickListener = mOnItemClickListener;
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    class ItemHolder extends RecyclerView.ViewHolder {
 
         TextView tvTitle;
         TextView tvDescripyion;
         TextView tvView;
         ImageView ivLogo;
 
-        public ViewHolder(View itemView) {
+        public ItemHolder(View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tv_title);
             tvDescripyion = itemView.findViewById(R.id.tv_description);
@@ -45,36 +45,38 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recycler_item, parent, false);
-        return new ViewHolder(view);
+    public ItemHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recycler_item, null);
+        return new ItemHolder(view);
     }
 
-
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        ((ViewHolder) holder).tvTitle.setText(newsList.get(position).getTitle());
-        ((ViewHolder) holder).tvDescripyion.setText(newsList.get(position).getDescription());
+    public void onBindViewHolder(ItemHolder holder, int position) {
+        if (position == getItemCount() - 1) {
+            mOnItemClickListener.loadMoreNews();
+        }
+        holder.tvTitle.setText(newsList.get(position).getTitle());
+        holder.tvDescripyion.setText(newsList.get(position).getDescription());
         switch (newsList.get(position).getResource()) {
             case 1:
-                ((ViewHolder) holder).ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_lenta));
+                holder.ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_lenta));
                 break;
             case 2:
-                ((ViewHolder) holder).ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_yandex));
+                holder.ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_yandex));
                 break;
             case 3:
-                ((ViewHolder) holder).ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_tass));
+                holder.ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_tass));
                 break;
             case 4:
-                ((ViewHolder) holder).ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_rambler));
+                holder.ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_rambler));
                 break;
         }
-        final int id = newsList.get(position).getId();
+        holder.tvView.setText(String.valueOf(newsList.get(position).getViewed()));
         holder.itemView.setOnClickListener(view -> {
             if (mOnItemClickListener != null) {
-                ((ViewHolder) holder).tvView.setText(newsList.get(position).getViewed() + 1);
-                ((ViewHolder) holder).tvView.setBackground(context.getResources().getDrawable(R.drawable.shape_round_green));
-                mOnItemClickListener.onItemClick(id);
+                //holder.tvView.setText(newsList.get(position).getViewed() + 1);
+                //holder.tvView.setBackground(context.getResources().getDrawable(R.drawable.shape_round_green));
+                mOnItemClickListener.onItemClick(position);
             }
         });
     }
@@ -87,6 +89,8 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public interface OnItemClickListener {
 
         void onItemClick(int id);
+
+        void loadMoreNews();
     }
 }
 
