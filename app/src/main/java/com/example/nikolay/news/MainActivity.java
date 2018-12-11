@@ -1,39 +1,51 @@
 package com.example.nikolay.news;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcelable;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.example.nikolay.news.request.News;
 import com.example.nikolay.news.request.NewsApi;
 import com.example.nikolay.news.request.NewsModel;
-import com.example.nikolay.news.request.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements Adapter.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
 
     public static final String TAG = "MainActivity.TAG";
     public static final String LINK = "MainActivity.LINK";
+    private static final String SAVED_TEXT = "MainActivity.SAVED_TEXT";
+
+    String BASE_URL = "http://192.168.2.4/";
 
     @BindView(R.id.rl_news)
     RecyclerView rlNews;
@@ -48,9 +60,10 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
 
     private int pageIndex;
 
+    private SharedPreferences sPref;
+
     Retrofit retrofit;
     NewsApi newsApi;
-    private boolean isLoading;
     private LinearLayoutManager layoutManager;
 
     @Override
@@ -61,26 +74,22 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
         swipe.setOnRefreshListener(this);
         rlNews.setVisibility(View.GONE);
         progress.setVisibility(ProgressBar.VISIBLE);
-        retrofit = Utils.getRetrofitClient();
+
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor).build();
+        retrofit = new Retrofit.Builder()
+                .client(client)
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        sPref = getPreferences(MODE_PRIVATE);
+        BASE_URL = sPref.getString(SAVED_TEXT, BASE_URL);
+
         newsApi = retrofit.create(NewsApi.class);
         layoutManager = new LinearLayoutManager(MainActivity.this);
         newsList = new ArrayList<>();
-        /*rlNews.setOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                int visibleItemCount = layoutManager.getChildCount();
-                int totalItemCount = layoutManager.getItemCount();
-                int firstVisibleItems = layoutManager.findFirstVisibleItemPosition();
-
-                if (!isLoading) {
-                    if ((visibleItemCount + firstVisibleItems) >= totalItemCount) {
-                        isLoading = true;
-                        loadMoreNews();
-                    }
-                }
-            }
-        });*/
         pageIndex = 0;
         getNews();
     }
@@ -129,6 +138,33 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
         });
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Settings");
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setText(BASE_URL);
+        builder.setView(input);
+        builder
+                .setPositiveButton(R.string.ok, (dialog, which) -> {
+                    BASE_URL = input.getText().toString();
+                    sPref = getPreferences(MODE_PRIVATE);
+                    SharedPreferences.Editor ed = sPref.edit();
+                    ed.putString(SAVED_TEXT, BASE_URL);
+                    ed.apply();
+                })
+                .setNegativeButton(R.string.cancel, (dialog, which) -> dialog.dismiss());
+        builder.show();
+        return false;
+    }
+
     void hideProgress() {
         rlNews.setVisibility(View.VISIBLE);
         progress.setVisibility(View.GONE);
@@ -154,7 +190,6 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
     }
 
     public void loadMoreNews() {
-        isLoading = false;
         pageIndex += 1;
         Call<NewsModel> call = newsApi.getNews(String.valueOf(pageIndex));
         call.enqueue(new Callback<NewsModel>() {
@@ -162,9 +197,11 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
             public void onResponse(Call<NewsModel> call, Response<NewsModel> response) {
                 NewsModel newsModel = response.body();
                 if (newsModel != null) {
+                    Parcelable recyclerViewState;
+                    recyclerViewState = rlNews.getLayoutManager().onSaveInstanceState();
                     newsList.addAll(newsModel.getData());
-                    adapter.notifyDataSetChanged();
-                    rlNews.setAdapter(adapter);
+                    rlNews.getAdapter().notifyDataSetChanged();
+                    rlNews.getLayoutManager().onRestoreInstanceState(recyclerViewState);
                 }
             }
 

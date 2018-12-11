@@ -52,7 +52,7 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ItemHolder> {
 
     @Override
     public void onBindViewHolder(ItemHolder holder, int position) {
-        if (position == getItemCount() - 1) {
+        if (position == getItemCount() - 2) {
             mOnItemClickListener.loadMoreNews();
         }
         holder.tvTitle.setText(newsList.get(position).getTitle());
@@ -74,8 +74,8 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ItemHolder> {
         holder.tvView.setText(String.valueOf(newsList.get(position).getViewed()));
         holder.itemView.setOnClickListener(view -> {
             if (mOnItemClickListener != null) {
-                //holder.tvView.setText(newsList.get(position).getViewed() + 1);
-                //holder.tvView.setBackground(context.getResources().getDrawable(R.drawable.shape_round_green));
+                holder.tvView.setText(String.valueOf(newsList.get(position).getViewed() + 1));
+                holder.tvView.setBackground(context.getResources().getDrawable(R.drawable.shape_round_green));
                 mOnItemClickListener.onItemClick(position);
             }
         });

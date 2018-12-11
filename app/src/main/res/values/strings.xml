@@ -2,4 +2,6 @@
     <string name="app_name">News</string>
 
     <string name="error_net">Проблемы с подключением к интернету</string>
+    <string name="ok">Ok</string>
+    <string name="cancel">Cancel</string>
 </resources>

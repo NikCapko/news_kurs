@@ -36,13 +36,13 @@
             android:id="@+id/tv_view"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:gravity="center"
-            android:textColor="@color/black"
-            android:background="@drawable/shape_round_blue"
-            android:layout_marginLeft="@dimen/activity_margin_half"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
-            android:text="1" />
+            android:layout_marginLeft="@dimen/activity_margin_half"
+            android:background="@drawable/shape_round_blue"
+            android:gravity="center"
+            android:text="1"
+            android:textColor="@color/black" />
 
     </RelativeLayout>
 
@@ -57,5 +57,14 @@
         android:textSize="@dimen/text_size_14"
         tools:text="Суд приговорил сопредседателя незарегистрированной партии «Другая Россия» Александра Аверина к трем годам колонии по делу о покушении на контрабанду оружия. Гособвинение просило для него четыре года. Мужчину задержали в апреле на границе ЛНР и Ростовской области, в его вещах был найден пистолет Макарова." />
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_below="@+id/tv_description"
+        android:layout_marginLeft="@dimen/activity_margin"
+        android:layout_marginTop="@dimen/activity_margin_half"
+        android:layout_marginRight="@dimen/activity_margin"
+        android:layout_marginBottom="@dimen/activity_margin_half"
+        android:background="@color/colorPrimaryDark" />
 
 </RelativeLayout>
