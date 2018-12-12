@@ -57,6 +57,7 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ItemHolder> {
         }
         holder.tvTitle.setText(newsList.get(position).getTitle());
         holder.tvDescripyion.setText(newsList.get(position).getDescription());
+        holder.tvView.setBackground(context.getResources().getDrawable(R.drawable.shape_round_blue));
         switch (newsList.get(position).getResource()) {
             case 1:
                 holder.ivLogo.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_lenta));
@@ -74,8 +75,6 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ItemHolder> {
         holder.tvView.setText(String.valueOf(newsList.get(position).getViewed()));
         holder.itemView.setOnClickListener(view -> {
             if (mOnItemClickListener != null) {
-                holder.tvView.setText(String.valueOf(newsList.get(position).getViewed() + 1));
-                holder.tvView.setBackground(context.getResources().getDrawable(R.drawable.shape_round_green));
                 mOnItemClickListener.onItemClick(position);
             }
         });

@@ -42,7 +42,6 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity implements Adapter.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
 
     public static final String TAG = "MainActivity.TAG";
-    public static final String LINK = "MainActivity.LINK";
     private static final String SAVED_TEXT = "MainActivity.SAVED_TEXT";
 
     String BASE_URL = "http://192.168.2.4/";
@@ -64,7 +63,6 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
 
     Retrofit retrofit;
     NewsApi newsApi;
-    private LinearLayoutManager layoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +73,9 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
         rlNews.setVisibility(View.GONE);
         progress.setVisibility(ProgressBar.VISIBLE);
 
+        sPref = getPreferences(MODE_PRIVATE);
+        BASE_URL = sPref.getString(SAVED_TEXT, BASE_URL);
+
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         OkHttpClient client = new OkHttpClient.Builder()
@@ -84,11 +85,8 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
                 .baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-        sPref = getPreferences(MODE_PRIVATE);
-        BASE_URL = sPref.getString(SAVED_TEXT, BASE_URL);
 
         newsApi = retrofit.create(NewsApi.class);
-        layoutManager = new LinearLayoutManager(MainActivity.this);
         newsList = new ArrayList<>();
         pageIndex = 0;
         getNews();
@@ -97,17 +95,15 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
     @Override
     public void onRefresh() {
         swipe.setRefreshing(true);
+        rlNews.setVisibility(View.GONE);
         new Handler().postDelayed(() -> {
             pageIndex = 0;
-            rlNews.setVisibility(View.GONE);
-            progress.setVisibility(ProgressBar.VISIBLE);
             newsList = new ArrayList<>();
-            progress.setVisibility(ProgressBar.VISIBLE);
-            progress.setVisibility(View.VISIBLE);
-            layoutManager = new LinearLayoutManager(MainActivity.this);
             getNews();
-        }, 0);
+        }, 2000);
         swipe.setRefreshing(false);
+        progress.setVisibility(ProgressBar.VISIBLE);
+        progress.setVisibility(View.VISIBLE);
     }
 
     private void getNews() {
@@ -119,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
                 NewsModel newsModel = response.body();
                 if (newsModel != null) {
                     newsList.addAll(newsModel.getData());
-                    rlNews.setLayoutManager(layoutManager);
+                    rlNews.setLayoutManager(new LinearLayoutManager(MainActivity.this));
                     rlNews.setItemAnimator(new DefaultItemAnimator());
                     adapter = new Adapter(newsList, MainActivity.this);
                     adapter.setOnItemClickListener(MainActivity.this);
@@ -131,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
             public void onFailure(Call<NewsModel> call, Throwable t) {
                 hideProgress();
                 Log.d(TAG, t.getMessage());
-                Toast toast = Toast.makeText(MainActivity.this, R.string.error_net, Toast.LENGTH_SHORT);
+                Toast toast = Toast.makeText(MainActivity.this, R.string.error_server, Toast.LENGTH_SHORT);
                 toast.setGravity(Gravity.CENTER, 0, 0);
                 toast.show();
             }
@@ -155,7 +151,6 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
         builder
                 .setPositiveButton(R.string.ok, (dialog, which) -> {
                     BASE_URL = input.getText().toString();
-                    sPref = getPreferences(MODE_PRIVATE);
                     SharedPreferences.Editor ed = sPref.edit();
                     ed.putString(SAVED_TEXT, BASE_URL);
                     ed.apply();
@@ -172,13 +167,17 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
     }
 
     @Override
-    public void onItemClick(int id) {
-        Call<Void> call = newsApi.newsView(String.valueOf(newsList.get(id).getId()));
+    public void onItemClick(int position) {
+        newsList.get(position).setViewed(newsList.get(position).getViewed() + 1);
+        Parcelable recyclerViewState = rlNews.getLayoutManager().onSaveInstanceState();
+        rlNews.getAdapter().notifyItemChanged(position);
+        rlNews.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+
+        Call<Void> call = newsApi.newsView(String.valueOf(newsList.get(position).getId()));
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(newsList.get(id).getLink()));
-                //intent.putExtra(LINK, newsList.get(id).getLink());
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(newsList.get(position).getLink()));
                 startActivity(intent);
             }
 
@@ -197,8 +196,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
             public void onResponse(Call<NewsModel> call, Response<NewsModel> response) {
                 NewsModel newsModel = response.body();
                 if (newsModel != null) {
-                    Parcelable recyclerViewState;
-                    recyclerViewState = rlNews.getLayoutManager().onSaveInstanceState();
+                    Parcelable recyclerViewState = rlNews.getLayoutManager().onSaveInstanceState();
                     newsList.addAll(newsModel.getData());
                     rlNews.getAdapter().notifyDataSetChanged();
                     rlNews.getLayoutManager().onRestoreInstanceState(recyclerViewState);
@@ -209,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.OnItemCli
             public void onFailure(Call<NewsModel> call, Throwable t) {
                 hideProgress();
                 Log.d(TAG, t.getMessage());
-                Toast toast = Toast.makeText(MainActivity.this, R.string.error_net, Toast.LENGTH_SHORT);
+                Toast toast = Toast.makeText(MainActivity.this, R.string.error_server, Toast.LENGTH_SHORT);
                 toast.setGravity(Gravity.CENTER, 0, 0);
                 toast.show();
             }
